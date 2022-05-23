@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ ticker }}</title>
+	<style>
+		body { background: #333; color: #eee; font-family: 'Helvetica Neue', sans-serif; font-weight: 200; font-size: 1rem; max-width: 800px; margin:auto; padding: 0 10px; }
+		table { width: 100%; border-collapse: collapse; }
+		td, th { border: 0px solid #aaa; padding: 5px; vertical-align: top; }
+		a { color: orange; }
+		label { display: inline-block; white-space: nowrap; }
+		input:not([type=checkbox]) { width: 55px; font-size: 1rem; text-align: left;  font-family: 'Helvetica Neue', sans-serif; font-weight: 200; color: #fff; background: none;}
+		input[type=radio],input[type=date] { width: auto; }
+		table.compact td { padding: 0; border: 0 }
+		.line { height: 25px }
+		.nowrap { white-space: nowrap; }
+		section { max-width: 480px; margin: auto; position: relative; }
+		i { font-style: normal; }
+		.red { color: red; }
+		.green { color: lime; }
+		.gray { color: gray; }
+		em { display: none; }
+		button { font-size: 16px; font-family: 'Helvetica Neue', sans-serif; font-weight: 400; }
+		ol, li { margin: 0; padding: 0; list-style-type: none; }
+		ol li span { font-size: 14px; color: #888; width: 150px; display: inline-block;}
+		progress { background: green }
+		.input-disabled { background: none; color: #888 !important; }
+		.menu { position: fixed; z-index: 1; left: 0; bottom: 0; background:  #000; width: 100%; text-align: center; font-weight: 500; }
+		.menu td { border: 1px solid #555; width: 25%; font-size: 14px; height: 30px; line-height: 30px; vertical-align: middle; }
+		.income { border-top: 1px solid #888; margin-top: 10px; padding-top: 5px; }
+		/*.portfolio { white-space: nowrap; }*/
+		a { color: #fff; text-decoration: none; }
+		h1 small { float: right; font-weight: normal; }
+		.stock-disabled a { color: #444; text-decoration: line-through; }
+		.settings span { display: inline-block; min-width: 140px; }
+		.settings .line { margin: 10px 0; }
+		h1 { font-weight: 100; }
+		.alertoast { position: fixed; left: 50%; top: 20px; font-size: 30px; font-weight: 100; background: #333; z-index: 1; padding: 5px 10px; box-shadow: 0 0 20px #333; }
+		.eventtext { display: inline-block; font-size: 14px; /*width: 215px;*/ vertical-align: top; }
+	</style>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+	<form action="/ui/regression" method="post">	
+
+	<section class="settings">
+
+		<a href="/ui" style="float: right; display: block; padding: 10px;">← Назад</a>
+		<h1>Тестирование</h1>
+		
+		<div class="line">
+			<span>Тикер</span>
+			<input type="text" name="ticker" value="{{ticker}}" required placeholder="Тикер">
+		</div>
+		<div class="line">
+			<span>Дата старта</span>
+			<input type="date" name="from" value="{{from}}">
+		</div>
+		<div class="line">
+			<span>Дата окончания</span>
+			<input type="date" name="to" value="{{to}}">
+		</div>
+		<div class="line">
+			<span>Take profit</span>
+			<input type="number" step="0.1" name="takeprofit" value="{{takeprofit}}">
+		</div>
+		<div class="line">
+			<input type="checkbox" name="buyonstart" value="{{buyonstart}}" {{#buyonstart}}checked{{/buyonstart}}>
+			<span>Покупать в начале сигнала?</span>
+		</div>
+		<div class="line">
+			<input type="checkbox" name="buyonend" value="{{buyonend}}" {{#buyonend}}checked{{/buyonend}}>
+			<span>Покупать в конце сигнала?</span>
+		</div>
+		<div class="line">
+			<span>Мин. длина сигнала</span>
+			<input type="number" name="minsignallength" value="{{minsignallength}}">
+		</div>
+		<!-- <div class="line">
+			<input type="checkbox" name="moredeals" value="{{moredeals}}" {{#moredeals}}checked{{/moredeals}}>
+			<span>Больше сделок?</span>
+		</div> -->
+
+		<br><button type="submit">Запуск</button>
+	</section>
+
+	</form>
+
+	<br>
+	<section>
+		{{#hasEvents}}
+		<h1>Результат теста</h1>
+		{{/hasEvents}}
+
+		{{#error}}
+		<h3 style="color:red">Ошибка:<br>
+			<small>{{error}}</small>
+		</h3>
+		
+		{{/error}}
+
+		<ol>
+			{{#events}}
+			<li class="">
+				<span>{{ dateStr }} <em><b><a href="/ui/{{ticker}}">{{ticker}}</a></b></em></span>
+				
+				<div class="eventtext">
+					{{#isIncome}}
+						<i class="green"><b>прибыль: +$ {{value}}</b></i>
+					{{/isIncome}}
+
+					{{^isIncome}}
+						{{action}}:
+							{{#value}}
+							$ {{value}}
+							{{/value}}
+						{{info}}
+					{{/isIncome}}
+				</div>
+			</li>
+			{{/events}}
+		</ol>
+
+		{{#hasEvents}}
+		<br><br>
+		<div class="line">
+			Свериться с графиком: <br>
+			<a class="under" href="/chart?ticker={{ticker}}&interval=10min&from={{chartToday}}">День</a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}"><b>Неделя</b></a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}&interval=day&from={{chartMonth}}">Месяц</a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}&interval=day&from={{chartHalfyear}}">Полгода</a> &nbsp;
+		</div>
+		{{/hasEvents}}
+		<br><br>
+	</section>
+
+	<script>
+		function alertoast(text) {
+			$('body').prepend(`<div class="alertoast">${text}</div>`);
+			$('body').find('.alertoast').first().fadeOut(5000);
+		}
+
+		/*$(function() {
+			$("form").submit(function(e) {
+
+		    e.preventDefault();
+
+		    const form = $(this);
+		    const url = form.attr('action');
+		    const method = form.attr('method');
+
+			form.attr('disabled', 'disabled');
+		    
+		    $.ajax({
+				method,
+				url,
+				data: form.serialize(),
+			})
+				.done(() => { alertoast('Ок!'); form.removeAttr('disabled'); })
+		    	.fail(() => { alertoast('Ошибка!'); form.removeAttr('disabled'); })
+			});
+		})*/
+	</script>
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

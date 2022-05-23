@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>{{{ ticker }}} chart</title>
+	<script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-core.min.js" type="text/javascript"></script>
+	<script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-stock.min.js" type="text/javascript"></script>
+	<script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-data-adapter.min.js"></script>
+	<script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-annotations.min.js"></script>
+	<style>
+	html,
+	body,
+	#container {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
+	a { padding: 10px; display: inline-block; font-size: 2rem }
+	.back { position: absolute; z-index: 1; width: 100%; font-size: 18px; background: white }
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+</head>
+
+<body>
+
+	<div class="back">
+		<a class="under" style="float:right" href="/ui/">← Назад в портфель</a>
+		<a class="under" style="float:right" href="/ui/{{ticker}}">← Назад к {{ticker}}</a>
+		
+		<a class="under" href="/chart?ticker={{ticker}}{{#settings.moredeals}}&more=1{{/settings.moredeals}}&interval=10min&from={{chartToday}}">День</a> &nbsp;
+		<a class="under" href="/chart?ticker={{ticker}}{{#settings.moredeals}}&more=1{{/settings.moredeals}}"><b>Неделя</b></a> &nbsp;
+		<a class="under" href="/chart?ticker={{ticker}}{{#settings.moredeals}}&more=1{{/settings.moredeals}}&interval=day&from={{chartMonth}}">Месяц</a> &nbsp;
+		<a class="under" href="/chart?ticker={{ticker}}{{#settings.moredeals}}&more=1{{/settings.moredeals}}&interval=day&from={{chartHalfyear}}">Полгода</a> &nbsp;
+	</div>
+
+	<div id="container"></div>
+
+	<script>
+		var chart;
+
+		var candles = {{{ data }}};
+
+		var events = {{{ events }}};
+
+		var operations = {{{ operations }}};
+
+		var tab = candles.map(function (candle) {
+			var { time, c, o, h, l } = candle;
+			return [time, c, o, h, l ];
+		});
+
+		anychart.onDocumentReady(function () {
+
+        // create a data table
+        var dataTable = anychart.data.table();//0, 'yyyy-mm-dd');
+        
+
+        // dataTable.addData(data);
+        dataTable.addData(tab);
+
+        // map data
+        var mapping = dataTable.mapAs({ 'open': 2, 'high': 3, 'low': 4, 'close': 1 });
+
+        // set the chart type
+        chart = anychart.stock();
+
+
+        var indicator = chart.plot(0).priceIndicator({value: "last-visible"});
+
+
+
+				// access the annotations() object of the plot to work with annotations
+				var controller = chart.plot(0).annotations();
+
+
+				const markers = operations.map(item => {
+					const color = item.action === 'Sell' ? '#f00' : '#0a0';
+					const markerType = item.action === 'Sell' ? 'arrowDown' : 'arrowUp';
+					const offsetY = item.action === 'Sell' ? -50 : 50;
+
+					const fill = item.isDeclined ? 'none' : `${color}`;
+					const stroke = `2 ${color}`;
+
+					return controller.marker({
+						xAnchor: item.datetime,
+						valueAnchor: item.price,
+						normal: { fill, stroke },
+						markerType,
+						offsetY,
+					});
+				});
+
+        // set the series
+        var series = chart.plot(0).candlestick(mapping);
+        series.name("{{{ ticker }}}");
+
+        var sma20 = chart.plot(0).sma(mapping, {{{ slow }}}).series();
+        sma20.stroke({ thickness: 3, color: '#ff8888' });
+
+        var sma20 = chart.plot(0).sma(mapping, {{{ fast }}}).series();
+        sma20.stroke({ thickness: 3, color: '#00ff00' });
+
+        // set settings for event markers
+        var eventMarkers = chart.plot(0).eventMarkers();
+        // set markers data
+        eventMarkers.data(events);
+
+        // set the chart title
+        chart.title("{{{ ticker }}} ({{{ name }}}) {{{ buy }}}");
+
+        // set the container id
+        chart.container('container');
+
+
+        var plot_1 = chart.plot(1);
+
+				// create RSI indicator with period 14
+				var rsi14 = plot_1.rsi(dataTable.mapAs({'close': 1}), 14).series();
+				rsi14.stroke('#bf360c');
+
+				plot_1.height('20%');
+
+				// y axis getter
+				var yAxis = plot_1.yAxis();
+
+				// create range marker
+				var marker = plot_1.rangeMarker();
+				// set start point of the marker
+				marker.from(30);
+				// set end point of the marker
+				marker.to(70);
+				// set marker inner color
+				marker.fill("#eeeeff");
+				// set axis
+				marker.axis(yAxis);
+
+
+
+
+        // draw the chart
+        chart.draw();
+
+      });
+
+    // });
+  </script>
+</body>
+
+</html>

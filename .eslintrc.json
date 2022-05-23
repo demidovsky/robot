@@ -1,0 +1,45 @@
+{
+  "env": {
+    "es6": true,
+    "node": true,
+    "mocha": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020
+  },
+  "rules": {
+    "prefer-const": 2,
+    "prefer-template": 2,
+    "semi": [2, "always"],
+    "camelcase": 0,
+    "quotes": [1, "single", "avoid-escape"],
+    "no-undef": 2,
+    "no-case-declarations": 2,
+    "no-return-assign": 2,
+    "no-param-reassign": 2,
+    "no-shadow": 2,
+    "class-methods-use-this": 2,
+    "eqeqeq": 2,
+    "no-useless-constructor": 2,
+    "no-use-before-define": [2, { "functions": false }],
+    "max-len": [2, 140, 2, {"ignoreComments": true}],
+    "no-multiple-empty-lines": [2, { "max": 2, "maxEOF": 0, "maxBOF": 0 }],
+    "object-curly-spacing": [2, "always"],
+    "space-in-parens": [2, "never"],
+    "array-bracket-spacing": [2, "never"],
+    "computed-property-spacing": [2, "never"],
+    "arrow-spacing": 2,
+
+    "complexity": ["warn", 10],
+    "indent": ["warn", 2],
+    
+    "no-console": "off",
+    "template-curly-spacing": "off",
+    "space-before-function-paren": "off",
+    "consistent-return": "off",
+    "require-atomic-updates": "off"
+  }
+}

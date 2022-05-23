@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ ticker }}</title>
+	<style>
+		body { background: #333; color: #eee; font-family: 'Helvetica Neue', sans-serif; font-weight: 200; font-size: 1rem; max-width: 800px; margin:auto; padding: 10px; }
+		table { width: 100%; border-collapse: collapse; }
+		td, th { border: 0px solid #aaa; padding: 5px; vertical-align: top; }
+		a { color: orange; }
+		label { display: inline-block; white-space: nowrap; }
+		input:not([type=checkbox]) { width: 40px; font-size: 1rem; text-align: left;  font-family: 'Helvetica Neue', sans-serif; font-weight: 200; color: #fff; background: none;}
+		table.compact td { padding: 0; border: 0 }
+		.line { height: 25px }
+		.nowrap { white-space: nowrap; }
+		section { max-width: 480px; margin: auto; position: relative; }
+		i { font-style: normal; }
+		.red { color: red; }
+		.green { color: lime; }
+		.gray { color: gray; }
+		em { display: none; }
+		button { font-size: 16px; font-family: 'Helvetica Neue', sans-serif; font-weight: 400; }
+		ol, li { margin: 0; padding: 0; list-style-type: none }
+		ol li span { font-size: 14px; color: #888; width: 150px; display: inline-block;}
+		progress { background: green }
+		input[disabled] { background: none; color: #888 !important; }
+		.menu { position: fixed; z-index: 1; left: 0; bottom: 0; background:  #000; width: 100%; text-align: center; font-weight: 500; }
+		.menu td { border: 1px solid #555; width: 25%; font-size: 14px; height: 30px; line-height: 30px; vertical-align: middle; }
+		.income { border-top: 1px solid #888; margin-top: 10px; padding-top: 5px; }
+		/*.portfolio { white-space: nowrap; }*/
+		a { color: #fff; text-decoration: none; }
+		a.under { text-decoration: underline; }
+		.alertoast { position: fixed; left: 50%; top: 20px; font-size: 30px; font-weight: 100; background: #333; z-index: 1; padding: 5px 10px; box-shadow: 0 0 20px #333; }
+		h1 { margin-bottom: 0; display: inline-block; }
+		small { white-space: nowrap; }
+	</style>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+	
+
+
+	<section style="display: block;">
+		<a href="/ui" style="float: right; display: block; padding: 10px;">← Назад</a>
+
+		<div style="margin-bottom: 10px; {{#doNotWant}} text-decoration:line-through{{/doNotWant}};">
+			<h1>{{ ticker }}</h1> <small>{{ name }} </small> 
+		</div>
+
+			<div class="nowrap" style="float:none; text-align: left; padding-right: 5px">
+				{{ settings.price }} {{ currencySign }}
+				<button id="buynow">Купить сейчас</button>
+				&nbsp;
+				<button id="sellnow">Продать сейчас</button>
+			</div>
+
+		<br>
+
+		<form method="POST" action="/stocksettings">
+
+			<input type="hidden" value="{{ticker}}" name="ticker">
+
+		<div class="line nowrap">
+			<span style="display: inline-block; width: 77px;">Рост:</span>
+			<progress id="file" max="{{takeprofit}}" value="{{profitPercent}}"> {{profitPercent}}% </progress>
+			<span style="position: absolute; margin-left: -25%; text-shadow: 2px 1px 4px #000; background: rgba(0,0,0,0.2); /*color:{{ color }};*/ border-radius: 10px;">{{ profitPercent }}%</span>
+			{{#settings.takeprofit}}
+			<input name="takeprofit" type="number" value="{{{ takeprofit }}}" step="0.1">
+			<input name="takeprofit_auto" type="checkbox"> auto
+			{{/settings.takeprofit}}
+			{{^settings.takeprofit}}
+			<input name="takeprofit" type="number" value="{{{ takeprofit }}}" step="0.1" disabled class="input-disabled">
+			<input name="takeprofit_auto" type="checkbox" checked> auto
+			{{/settings.takeprofit}}
+		</div>
+
+		<div class="line">
+			<span style="display: inline-block; width: 77px;">Доход:</span>
+			<progress id="file" max="{{maxProfitValue}}" value="{{profitValue}}"> {{profitValue}}% </progress>
+			<span style="position: absolute; margin-left: -25%; text-shadow: 2px 1px 4px #000; background: rgba(0,0,0,0.2); color:{{ color }}; border-radius: 10px;"><b>$ {{ profitValue }}</b></span>
+			<span>+${{ maxProfitValue }}</span>
+		</div>
+
+<br>
+		<div class="line">
+			<span style="display: inline-block; width: 77px;">Кол-во:</span>
+			<progress id="file" max="100" value="{{ amountPercent }}"> {{ lots }} </progress>
+			<span style="position: absolute; margin-left: -25%; text-shadow: 2px 1px 4px #000; background: rgba(0,0,0,0.2); color:white; border-radius: 10px;"><b> {{ lots }} </b></span>
+			{{^amountAuto}}
+			<input name="amount" type="number" value="{{{ amount }}}">
+			<input name="amount_auto" type="checkbox"> auto
+			{{/amountAuto}}
+			{{#amountAuto}}
+			<input name="amount" type="number" value="{{{ amount }}}" disabled class="input-disabled">
+			<input name="amount_auto" type="checkbox" checked> auto
+			{{/amountAuto}}
+		</div>
+
+		<!-- <div class="line">Result: <b><i class="green">+$10.5</i></b></div> -->
+		<div class="line">Текущая: <b>$ {{ averagePrice }}</b> x {{ lots }} = 
+			<b>$ {{ stockSize }}</b> ({{ partOf }}% от всего)
+		</div>
+		<br>
+
+		<div class="line">Дней в портфеле: <b id="daysin">{{ daysIn }}</b></div>
+		<div class="line">Длина сигнала: <span style="color: #f00">{{ signallength }}</span></div>
+		<div class="line">RSI: <span style="color: {{ rsiColor }}">{{ settings.rsi }}</span></div>
+		<br>
+		<div class="line">
+			График:
+			<a class="under" href="/chart?ticker={{ticker}}&interval=10min&from={{chartToday}}">День</a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}"><b>Неделя</b></a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}&interval=day&from={{chartMonth}}">Месяц</a> &nbsp;
+			<a class="under" href="/chart?ticker={{ticker}}&interval=day&from={{chartHalfyear}}">Полгода</a> &nbsp;
+		</div>
+
+
+<br>
+
+
+
+		<!-- <div class="line nowrap">
+			<span style="display: inline-block; width: 77px;">Amount:</span>
+			<progress id="file" max="100" value="70"> 70% </progress>
+			<span style="position: absolute; margin-left: -25%; background: rgba(0,0,0,0.5)"><b>7</b></span>
+			<input type="number" value="10">
+			<input type="checkbox"> auto
+		</div>
+ -->
+		<!-- <div class="line">
+			<span>Price:</span>
+			<span>$100</span>
+			<progress id="file" max="100" value="50"> 50% </progress>
+			<span style="position: absolute; margin-left: -25%; background: rgba(0,0,0,0.5);"><b>$101.5</b></span>
+			<span>$103</span>
+		</div> -->
+
+<!-- 		<table>
+			<tr>
+				<td> -->
+<!-- 				</td>
+				<td> -->
+					<!-- <div class="nowrap line">Max amount: <input type="number" value="10"> <input type="checkbox"> auto</div> -->
+					<div class="nowrap line">Пауза по покупке: 
+
+						{{#settings.buycooldown}}
+						<input name="buycooldown" type="number" value="{{{ buycooldown }}}">
+						<input name="buycooldown_auto" type="checkbox"> auto
+						{{/settings.buycooldown}}
+						{{^settings.buycooldown}}
+						<input name="buycooldown" type="number" value="{{{ buycooldown }}}" disabled class="input-disabled">
+						<input name="buycooldown_auto" type="checkbox" checked> auto
+						{{/settings.buycooldown}}
+
+					</div>
+					<div class="nowrap line">Пауза по продаже: 
+
+						{{#settings.sellcooldown}}
+						<input name="sellcooldown" type="number" value="{{{ sellcooldown }}}">
+						<input name="sellcooldown_auto" type="checkbox"> auto
+						{{/settings.sellcooldown}}
+						{{^settings.sellcooldown}}
+						<input name="sellcooldown" type="number" value="{{{ sellcooldown }}}" disabled class="input-disabled">
+						<input name="sellcooldown_auto" type="checkbox" checked> auto
+						{{/settings.sellcooldown}}
+
+					</div>
+<!-- 				</td>
+			</tr>
+		</table> -->
+					<label class="line">
+						<input name="scheduledbuy" type="checkbox" {{#settings.scheduledbuy}}checked{{/settings.scheduledbuy}}>
+						<span>По расписанию</span>
+					</label>
+					<br>
+					<label class="line">
+						<input name="moredeals" type="checkbox" {{#settings.moredeals}}checked{{/settings.moredeals}}>
+						<span>Больше сделок</span>
+					</label>
+					<br>
+					<label class="line">
+						<input name="buyonstart" type="checkbox" disabled {{#defaultSettings.buyonstart}}checked{{/defaultSettings.buyonstart}}>
+						<span>Покупать в начале</span>
+					</label>
+					<br>
+					<label class="line">
+						<input name="buyonend" type="checkbox" disabled {{#defaultSettings.buyonend}}checked{{/defaultSettings.buyonend}}>
+						<span>Покупать в конце</span>
+					</label>
+
+
+	<br><br><button type="submit" style="float:left">Сохранить</button>
+	{{#settings.deletedAt}}
+				<button style="color:red; float: right" id="undelete">Вернуть</button>
+				{{/settings.deletedAt}}
+				{{^settings.deletedAt}}
+				<button style="color:red; float: right" id="delete">Удалить</button>
+				{{/settings.deletedAt}}
+	<br>
+	<br>
+
+
+</form>
+
+
+<div class="events">
+				<br>
+				<b>События</b> &nbsp;<button id="loadtimeline">Загрузить</button>
+				<ol id="timeline">
+					{{#timeline}}
+					<li class="nowrap"><span {{#isSell}}class="income"{{/isSell}}>{{ dateStr }}</span> 
+
+						{{#isIncome}}
+						<i class="green"><b>+$ {{value}}</b></i>
+						{{/isIncome}}
+						{{^isIncome}}
+						{{action}}
+						$ {{value}}
+						{{/isIncome}}
+
+					</li>
+					{{/timeline}}
+					<!-- <li><span>2021-07-24 Wed 22:00</span> SELL $98 <i class="green"><b>+$5.5</b></i></li>
+
+
+					<li><span>2021-07-23 Tue 13:00</span> BUY $93</li>
+					<li><span>2021-07-22 Mon 17:00</span> cannot buy [cooldown after buy]</li>
+					<li><span>2021-07-22 Mon 12:00</span> BUY $95</li> -->
+				</ol>
+				<br>
+			</div>
+
+	</section>
+
+
+	<script>
+		function alertoast(text) {
+			$('body')
+				.prepend(`<div class="alertoast">${text}</div>`);
+			$('body').find('.alertoast').first().fadeOut(5000);
+		}
+
+
+		$(function() {
+
+			$("form").submit(function(e) {
+				$('button[type=submit]').attr('disabled', 'disabled');
+
+		    e.preventDefault(); // avoid to execute the actual submit of the form.
+
+		    const form = $(this);
+		    const url = form.attr('action');
+		    const method = form.attr('method');
+
+		    const offCheckboxes = form
+		    	.find('input[type=checkbox]')
+		    	.toArray()
+		    	.filter(item => !$(item).is(':checked'))
+		    	.map(item => `${item.name}=off`)
+		    	.join('&');
+		    
+		    $.ajax({
+           method,
+           url,
+           data: `${form.serialize()}&${offCheckboxes}`, // serializes the form's elements.
+         })
+		    .done(() => { alertoast('Ок!'); $('button').removeAttr('disabled'); })
+		    .fail(() => { alertoast('Ошибка!'); $('button').removeAttr('disabled'); })
+			});
+
+			$('input[type=checkbox]').on('change', function() {
+				const checkboxName = $(this).attr('name');
+				console.log(checkboxName);
+				if (checkboxName.match(/_auto$/)) {
+					const fieldName = checkboxName.replace('_auto', '');
+					if ($(this).is(':checked')) {
+						$(`input[name=${fieldName}]`).attr('disabled', 'disabled');
+					} else {
+						$(`input[name=${fieldName}]`).removeAttr('disabled');
+					}
+				}
+			});
+
+
+			$('#buynow').on('click', function(e) {
+				e.preventDefault();
+				const $this = $(this);
+				$this.attr('disabled', 'disabled');
+				$.ajax({
+					method: 'POST',
+					url: '/stock/buy/{{ ticker }}',
+					data: {}
+				})
+				.done(() => { alertoast('Ок!'); $this.removeAttr('disabled'); })
+		    .fail(() => { alertoast('Ошибка!'); $this.removeAttr('disabled'); })
+			});
+
+			$('#sellnow').on('click', function(e) {
+				e.preventDefault();
+				const $this = $(this);
+				$this.attr('disabled', 'disabled');
+				$.ajax({
+					method: 'POST',
+					url: '/stock/sell/{{ ticker }}',
+					data: {}
+				})
+				.done(() => { alertoast('Ок!'); $this.removeAttr('disabled'); })
+		    .fail((err) => { alertoast('Ошибка!'); console.error(err); $this.removeAttr('disabled'); })
+			});
+
+
+			$('#delete').on('click', function(e) {
+				e.preventDefault();
+				const $this = $(this);
+				$this.attr('disabled', 'disabled');
+				$.ajax({
+					method: 'POST',
+					url: '/stock/off/{{ ticker }}',
+					data: {}
+				})
+				.done(() => { alertoast('Ок!'); $this.removeAttr('disabled'); })
+		    	.fail(() => { alertoast('Ошибка!'); $this.removeAttr('disabled'); })
+			});
+
+			$('#undelete').on('click', function(e) {
+				e.preventDefault();
+				const $this = $(this);
+				$this.attr('disabled', 'disabled');
+				$.ajax({
+					method: 'POST',
+					url: '/stock/on/{{ ticker }}',
+					data: {}
+				})
+				.done(() => { alertoast('Ок!'); $this.removeAttr('disabled'); })
+		    .fail(() => { alertoast('Ошибка!'); $this.removeAttr('disabled'); })
+			});
+
+			$('#loadtimeline').on('click', function(e) {
+				e.preventDefault();
+				const $this = $(this);
+				$this.attr('disabled', 'disabled');
+				$.ajax({
+					method: 'GET',
+					url: '/stock/timeline/{{ ticker }}',
+					data: {}
+				})
+				.done(({ timeline, daysIn }) => {
+					const html = timeline.map(({ isSell, isIncome, dateStr, value, action, info }) => `
+						<li class="">
+							<span ${ isSell ? 'class="income"' : '' }}>${dateStr}</span> 
+							${isIncome ?
+								`<i class="green"><b>+$ ${value}</b></i>`
+								:
+								`${action} ${value || info}`
+							}
+						</li>`
+					);
+					$('#timeline').html(html);
+					$('#daysin').text(daysIn);
+					$this.removeAttr('disabled');
+				})
+		    .fail((err) => { alertoast('Ошибка!'); console.error(err); $this.removeAttr('disabled'); })
+		  });
+
+		}); // end of ready
+	</script>
+
+</body>
+</html>
